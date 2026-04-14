@@ -5,7 +5,9 @@ using UnityEngine;
 public class Monster : MonoBehaviour
 {
     public float spd = 5.0f;
-    Vector3 direct = Vector3.down; 
+    Vector3 direct = Vector3.down;
+
+    public GameObject prefabsExplosion;
 
     // Update is called once per frame
     void Update()
@@ -14,6 +16,8 @@ public class Monster : MonoBehaviour
     }
     private void OnCollisionEnter(Collision collision)
     {
+        GameObject explosionObi = Instantiate(prefabsExplosion);
+        explosionObi.transform.position = transform.position;
         Destroy(collision.gameObject);
 
         Destroy(gameObject);
