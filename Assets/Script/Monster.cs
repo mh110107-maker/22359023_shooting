@@ -16,6 +16,15 @@ public class Monster : MonoBehaviour
     }
     private void OnCollisionEnter(Collision collision)
     {
+        if(collision.gameObject.tag == "Character")
+        {
+            collision.gameObject.GetComponent<Health>().MinusHealth(1f);
+
+            Destroy(gameObject);
+        }
+
+
+
         if(collision.gameObject.tag == "bullet")
         {
             GameObject gameManager = GameObject.Find("GameManager");
