@@ -224,4 +224,35 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
             }
         }
     }
+    // InventorySlotUI.cs 내부의 TrashThisItem 함수를 수정합니다.
+
+    public void TrashThisItem()
+    {
+        if (itemList != null && index >= 0 && index < itemList.Count)
+        {
+            if (itemList[index] != null && itemList[index].data != null)
+            {
+                // 1. 삭제할 아이템의 정보를 미리 변수에 저장합니다.
+                string deletedName = itemList[index].data.itemName;
+                string deletedId = itemList[index].data.itemId;
+                int deletedCount = itemList[index].count;
+
+                // 2. 인벤토리 데이터에서 아이템 삭제 (null 처리)
+                itemList[index] = null;
+
+                // 3. 인벤토리 UI 새로고침
+                if (PlayerInventory.Instance != null)
+                {
+                    PlayerInventory.Instance.RefreshInventoryUI();
+                }
+
+                // ★ 4. 유니티 콘솔창에 삭제 완료 문구 출력하기!
+                // [일반 로그] 가장 기본적인 하얀색 글씨로 출력
+                Debug.Log($"<color=white>[휴지통] 아이템 삭제 완료: <b>{deletedName}</b> ({deletedCount}개)</color>");
+
+                // [선택] 만약 콘솔창에서 더 눈에 띄게 '노란색 경고' 형태로 보고 싶다면 아래 주석을 해제하세요!
+                // Debug.LogWarning($"[휴지통] {deletedName} (ID: {deletedId}) 아이템이 인벤토리에서 영구 삭제되었습니다.");
+            }
+        }
+    }
 }

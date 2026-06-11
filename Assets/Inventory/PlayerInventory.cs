@@ -31,7 +31,7 @@ public class PlayerInventory : MonoBehaviour
     }
 
     // UI 새로고침을 편하게 호출하기 위한 헬퍼 함수
-    private void RefreshInventoryUI()
+    public void RefreshInventoryUI()
     {
         InventoryUI ui = FindObjectOfType<InventoryUI>();
         if (ui != null)
