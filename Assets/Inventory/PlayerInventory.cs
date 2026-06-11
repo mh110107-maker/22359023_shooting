@@ -40,50 +40,33 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
+    // ★ [해결책 1] 기존 스택에 합치지 않고 빈 슬롯마다 1개씩 나누어 담는 로직
     public bool AddItem(ItemData itemData, int count = 1)
     {
         if (itemData == null || count <= 0) return false;
 
-        // 1. 기존 스택 아이템에 추가
-        if (itemData.canStack)
-        {
-            for (int i = 0; i < bagItems.Count; i++)
-            {
-                InventoryItem item = bagItems[i];
-
-                if (item != null && item.data == itemData && item.count < itemData.maxStack)
-                {
-                    int addCount = Mathf.Min(count, itemData.maxStack - item.count);
-                    item.count += addCount;
-                    count -= addCount;
-
-                    if (count <= 0)
-                    {
-                        Debug.Log(itemData.itemName + " 스택 추가 성공");
-                        RefreshInventoryUI(); // ★ 데이터가 변경되었으므로 UI 갱신
-                        return true;
-                    }
-                }
-            }
-        }
-
-        // 2. 빈 칸을 찾아 새 아이템 넣기 
+        // 빈 칸을 순서대로 찾아 아이템을 1개씩 나누어 집어넣습니다.
         for (int i = 0; i < bagItems.Count; i++)
         {
             if (bagItems[i] == null || bagItems[i].data == null)
             {
-                int addCount = itemData.canStack ? Mathf.Min(count, itemData.maxStack) : 1;
-                bagItems[i] = new InventoryItem(itemData, addCount);
-                count -= addCount;
+                bagItems[i] = new InventoryItem(itemData, 1);
+                count--;
 
-                Debug.Log(itemData.itemName + " 새 슬롯에 추가 성공");
+                Debug.Log($"{itemData.itemName} 새 슬롯({i}번)에 1개 추가 성공");
 
                 if (count <= 0)
                 {
-                    RefreshInventoryUI(); // ★ 데이터가 변경되었으므로 UI 갱신
+                    RefreshInventoryUI();
                     return true;
                 }
             }
+        }
+
+        if (count > 0)
+        {
+            Debug.LogWarning($"가방 공간이 부족하여 {itemData.itemName} {count}개를 더 넣지 못했습니다.");
+            RefreshInventoryUI();
         }
 
         return false;
@@ -119,18 +102,40 @@ public class PlayerInventory : MonoBehaviour
         RefreshInventoryUI(); // 이동 후 UI 갱신
     }
 
+    // ★ [수정 완료] 가방 ➡️ 장착 칸 이동 시 슬롯 역할 제한 로직 추가
     private void MoveOneItemToEquip(int bagIndex, int equipIndex)
     {
         InventoryItem bagItem = bagItems[bagIndex];
         if (IsEmpty(bagItem)) return;
+
         if (!IsEmpty(equipItems[equipIndex]))
         {
             Debug.Log("장착 슬롯이 이미 사용 중입니다.");
             return;
         }
 
-        // ★ 장착하려는 아이템이 '장비 유형'인지 체크하는 로직이 이곳에 들어가면 좋습니다.
-        // 예: if(bagItem.data.itemType != ItemType.Equipment) return;
+        // -----------------------------------------------------------------
+        // [슬롯별 아이템 타입 검사 조건문]
+        // -----------------------------------------------------------------
+        // 0번 슬롯: 무기(Weapon)만 허용
+        if (equipIndex == 0 && bagItem.data.itemType != ItemType.Weapon)
+        {
+            Debug.LogWarning("0번 슬롯에는 무기만 장착할 수 있습니다!");
+            return;
+        }
+        // 1번 슬롯: 방어구(Armor)만 허용
+        if (equipIndex == 1 && bagItem.data.itemType != ItemType.Armor)
+        {
+            Debug.LogWarning("1번 슬롯에는 방어구만 장착할 수 있습니다!");
+            return;
+        }
+        // 2번 슬롯: 포션/소비템(Consumable)만 허용
+        if (equipIndex == 2 && bagItem.data.itemType != ItemType.Consumable)
+        {
+            Debug.LogWarning("2번 슬롯에는 소비 아이템(포션)만 장착할 수 있습니다!");
+            return;
+        }
+        // -----------------------------------------------------------------
 
         ItemData itemData = bagItem.data;
 
@@ -140,7 +145,7 @@ public class PlayerInventory : MonoBehaviour
         {
             bagItems[bagIndex] = null;
         }
-        Debug.Log(itemData.itemName + " 1개 장착");
+        Debug.Log($"{itemData.itemName}을 장착 슬롯 {equipIndex}번에 장착 완료");
         RefreshInventoryUI();
     }
 
@@ -149,12 +154,14 @@ public class PlayerInventory : MonoBehaviour
         return item == null || item.data == null || item.count <= 0;
     }
 
+    // ★ [수정 완료] 장착 칸 ➡️ 가방 이동(혹은 다른 아이템과 교환) 시 제한 로직 추가
     private void MoveEquipItemToBag(int equipIndex, int bagIndex)
     {
         InventoryItem equipItem = equipItems[equipIndex];
         if (IsEmpty(equipItem)) return;
         InventoryItem bagItem = bagItems[bagIndex];
 
+        // 가방의 목적지 칸이 완전히 비어있다면 제약 없이 즉시 해제
         if (IsEmpty(bagItem))
         {
             bagItems[bagIndex] = new InventoryItem(equipItem.data, equipItem.count);
@@ -163,6 +170,7 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
+        // 가방에 있는 같은 종류의 스택형 아이템과 합쳐질 때
         if (bagItem.data == equipItem.data && bagItem.data.canStack)
         {
             int space = bagItem.data.maxStack - bagItem.count;
@@ -180,7 +188,25 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
-        // 다른 아이템이면 교환 (※ 원래는 가방 아이템이 장비 가능한지 검사해야 안전합니다)
+        // 다른 아이템과 다이렉트로 맞바꾸려 할 때 (Swap 제약 추가)
+        // 가방에서 장착 칸으로 들어오려는 맞바꿈 템(bagItem)의 자격을 검사합니다.
+        if (equipIndex == 0 && bagItem.data.itemType != ItemType.Weapon)
+        {
+            Debug.LogWarning("무기 슬롯에는 무기 타입의 아이템만 교환해 넣을 수 있습니다.");
+            return;
+        }
+        if (equipIndex == 1 && bagItem.data.itemType != ItemType.Armor)
+        {
+            Debug.LogWarning("방어구 슬롯에는 방어구 타입의 아이템만 교환해 넣을 수 있습니다.");
+            return;
+        }
+        if (equipIndex == 2 && bagItem.data.itemType != ItemType.Consumable)
+        {
+            Debug.LogWarning("포션 슬롯에는 소비 아이템 타입만 교환해 넣을 수 있습니다.");
+            return;
+        }
+
+        // 조건 검사를 다 통과했다면 안전하게 Swap 진행
         InventoryItem temp = bagItems[bagIndex];
         bagItems[bagIndex] = new InventoryItem(equipItem.data, equipItem.count);
         equipItems[equipIndex] = temp;
@@ -206,6 +232,6 @@ public class PlayerInventory : MonoBehaviour
         {
             bagItems[bagIndex] = null;
         }
-        RefreshInventoryUI(); // 아이템 사용 후 UI 갱신
+        RefreshInventoryUI();
     }
 }

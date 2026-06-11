@@ -19,4 +19,5 @@ public class ItemData : ScriptableObject
     public int defenseBonus;
     public bool canStack = true;
     public int maxStack = 99;
+    public string itemDescription;
 }

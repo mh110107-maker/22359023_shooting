@@ -5,16 +5,17 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.VisualScripting;
 
-public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, IPointerClickHandler
+// ★ 클래스 상단 상속 부분에 IPointerEnterHandler, IPointerExitHandler를 추가했습니다.
+public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-
-
     public Image iconImage;
     public TMP_Text countText;
 
     private InventoryUI inventoryUI;
-    private List<InventoryItem> itemList;
-    private int index;
+
+    // ★ 다른 스크립트(휴지통 등)에서 접근할 수 있도록 기존 private을 public으로 변경해 두었습니다.
+    public List<InventoryItem> itemList;
+    public int index;
 
     public void SetSlot(InventoryUI inventoryUI, List<InventoryItem> itemList, int index)
     {
@@ -24,6 +25,7 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         // 현재 슬롯의 아이콘과 개수 텍스트 갱신
         RefreshView();
     }
+
     public void RefreshView()
     {
         if (itemList == null || index < 0 || index >= itemList.Count)
@@ -64,7 +66,7 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
             iconImage.raycastTarget = true;
         }
 
-        if (countText != null)                                        // 17. 개수 텍스트 컴포넌트가 연결되어 있는지 확인  
+        if (countText != null)                                         // 17. 개수 텍스트 컴포넌트가 연결되어 있는지 확인  
         {
             countText.text = "";                                      // 18. 개수 텍스트 초기화      
         }
@@ -104,6 +106,40 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         rootCanvas = GetComponentInParent<Canvas>();
     }
 
+    // ★ [2단계 추가] 마우스 포인터가 슬롯 영역 안으로 들어왔을 때 실행
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (itemList == null || index < 0 || index >= itemList.Count) return;
+
+        InventoryItem item = itemList[index];
+        // 슬롯에 실제 아이템 데이터가 존재할 때만 툴팁을 요청합니다.
+        if (item != null && item.data != null)
+        {
+            if (TooltipUI.Instance != null)
+            {
+                TooltipUI.Instance.ShowTooltip(item.data);
+            }
+        }
+    }
+
+    // ★ [2단계 추가] 마우스 포인터가 슬롯 영역 밖으로 나갔을 때 실행
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        if (TooltipUI.Instance != null)
+        {
+            TooltipUI.Instance.HideTooltip();
+        }
+    }
+
+    // ★ [2단계 추가] 슬롯 UI 오브젝트가 도중에 비활성화되면 안전하게 툴팁을 가립니다.
+    private void OnDisable()
+    {
+        if (TooltipUI.Instance != null)
+        {
+            TooltipUI.Instance.HideTooltip();
+        }
+    }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
         if (itemList == null || index < 0 || index >= itemList.Count) return;
@@ -111,6 +147,12 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         if (iconRect == null) return;
 
         if (rootCanvas == null) return; // 7. Canvas가 없으면 드래그 하지 않는다. 
+
+        // ★ [추가 예외 처리] 아이템을 드래그하기 시작하면 마우스 화면을 가리지 않도록 툴팁을 꺼줍니다.
+        if (TooltipUI.Instance != null)
+        {
+            TooltipUI.Instance.HideTooltip();
+        }
 
         Debug.Log("드래그 시작: " + itemList[index].data.itemName);
 
@@ -203,7 +245,6 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         if (inventoryUI != null) inventoryUI.Refresh();
     }
 
-
     public void OnPointerClick(PointerEventData eventData)
     {
         if (itemList == null || index < 0 || index >= itemList.Count) return;
@@ -224,7 +265,6 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
             }
         }
     }
-    // InventorySlotUI.cs 내부의 TrashThisItem 함수를 수정합니다.
 
     public void TrashThisItem()
     {
@@ -247,11 +287,7 @@ public class InventorySlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, I
                 }
 
                 // ★ 4. 유니티 콘솔창에 삭제 완료 문구 출력하기!
-                // [일반 로그] 가장 기본적인 하얀색 글씨로 출력
                 Debug.Log($"<color=white>[휴지통] 아이템 삭제 완료: <b>{deletedName}</b> ({deletedCount}개)</color>");
-
-                // [선택] 만약 콘솔창에서 더 눈에 띄게 '노란색 경고' 형태로 보고 싶다면 아래 주석을 해제하세요!
-                // Debug.LogWarning($"[휴지통] {deletedName} (ID: {deletedId}) 아이템이 인벤토리에서 영구 삭제되었습니다.");
             }
         }
     }
