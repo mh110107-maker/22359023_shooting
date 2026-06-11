@@ -49,6 +49,13 @@ public class Monster : MonoBehaviour
          Destroy(collision.gameObject);
          Destroy(gameObject);
         }
-          
+
+        MonsterDropper dropper = GetComponent<MonsterDropper>();
+        if (dropper != null) dropper.Drop();
+
+        gameObject.SetActive(false);
+        GameObject monsterObj = GameObject.Find("MonsterManager");
+        MonsterManager monsterManger = monsterObj.GetComponent<MonsterManager>();
+        monsterManger.monsterObjectPool.Add(gameObject);
     }
 }

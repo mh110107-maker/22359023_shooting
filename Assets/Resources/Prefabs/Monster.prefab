@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1247073544046561162}
   - component: {fileID: -138155921244617702}
   - component: {fileID: -2559916906803173200}
+  - component: {fileID: 7387922513774510830}
   m_Layer: 0
   m_Name: Monster
   m_TagString: Untagged
@@ -59,7 +60,7 @@ Rigidbody:
   m_Mass: 1
   m_Drag: 0
   m_AngularDrag: 0.05
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
@@ -78,6 +79,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spd: 5
   prefabsExplosion: {fileID: 8367907410985086596, guid: 0b493b97a8e419d46903c1b023460740, type: 3}
+--- !u!114 &7387922513774510830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7134083130157158764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d9e7d1cce11fa449a790b40def20114, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dropPrefab: {fileID: 9161217497033885378, guid: 35be6eb5f24c6ba42929edc3ad9c54cd, type: 3}
+  dropTables:
+  - itemData: {fileID: 11400000, guid: dc4c2e7a955acc44b970147317e65ec0, type: 2}
+    dropRate: 0.5
+    minCount: 1
+    maxCount: 3
 --- !u!1001 &1588402055002739152
 PrefabInstance:
   m_ObjectHideFlags: 0

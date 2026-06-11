@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MonsterManager : MonoBehaviour
 {
+    public List<GameObject> monsterObjectPool;
     public GameObject prefabsMonster;
 
     float nowTime = 0;
