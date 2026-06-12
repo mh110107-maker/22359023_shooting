@@ -72,6 +72,7 @@ public class PlayerInventory : MonoBehaviour
         return false;
     }
 
+    // ★ [버그 수정 완료] 장착창 내부에서 마구잡이로 이동하는 것을 막는 로직을 추가했습니다.
     public void MoveItem(List<InventoryItem> fromList, int fromIndex, List<InventoryItem> toList, int toIndex)
     {
         if (!IsValidIndex(fromList, fromIndex) || !IsValidIndex(toList, toIndex)) return;
@@ -81,6 +82,10 @@ public class PlayerInventory : MonoBehaviour
 
         bool isBagToEquip = fromList == bagItems && toList == equipItems;
         bool isEquipToBag = fromList == equipItems && toList == bagItems;
+        // -----------------------------------------------------------------
+        // [추가] 장착창 내부에서 아이템 위치를 변경할 때의 조건 식
+        // -----------------------------------------------------------------
+        bool isEquipToEquip = fromList == equipItems && toList == equipItems;
 
         if (isBagToEquip)
         {
@@ -94,7 +99,40 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
-        // 가방 안에서 순서 변경 등 일반 이동
+        // -----------------------------------------------------------------
+        // ★ [핵심 제약 조건 추가] 장착창 ➡️ 장착창 내부 이동 시 타입 검사
+        // -----------------------------------------------------------------
+        if (isEquipToEquip)
+        {
+            // 1. 옮기려는 목적지(toIndex) 슬롯의 제약 사항을 검사합니다.
+            if (toIndex == 0 && fromItem.data.itemType != ItemType.Weapon)
+            {
+                Debug.LogWarning("장착창 내부 이동 실패: 0번 슬롯에는 무기만 넣을 수 있습니다!");
+                return;
+            }
+            if (toIndex == 1 && fromItem.data.itemType != ItemType.Armor)
+            {
+                Debug.LogWarning("장착창 내부 이동 실패: 1번 슬롯에는 방어구만 넣을 수 있습니다!");
+                return;
+            }
+            if (toIndex == 2 && fromItem.data.itemType != ItemType.Consumable)
+            {
+                Debug.LogWarning("장착창 내부 이동 실패: 2번 슬롯에는 포션만 넣을 수 있습니다!");
+                return;
+            }
+
+            // 2. 만약 목적지(toIndex)에 이미 다른 아이템이 있다면, 그 아이템이 출발지(fromIndex)로 와도 안전한지 역검사합니다.
+            InventoryItem targetItem = toList[toIndex];
+            if (!IsEmpty(targetItem))
+            {
+                if (fromIndex == 0 && targetItem.data.itemType != ItemType.Weapon) return;
+                if (fromIndex == 1 && targetItem.data.itemType != ItemType.Armor) return;
+                if (fromIndex == 2 && targetItem.data.itemType != ItemType.Consumable) return;
+            }
+        }
+        // -----------------------------------------------------------------
+
+        // 모든 통과 검사를 통과했다면 안전하게 일반 이동(or Swap)을 진행합니다.
         InventoryItem temp = toList[toIndex];
         toList[toIndex] = fromList[fromIndex];
         fromList[fromIndex] = temp;
@@ -102,7 +140,7 @@ public class PlayerInventory : MonoBehaviour
         RefreshInventoryUI(); // 이동 후 UI 갱신
     }
 
-    // ★ [수정 완료] 가방 ➡️ 장착 칸 이동 시 슬롯 역할 제한 로직 추가
+    // ★ 가방 ➡️ 장착 칸 이동 시 슬롯 역할 제한 로직
     private void MoveOneItemToEquip(int bagIndex, int equipIndex)
     {
         InventoryItem bagItem = bagItems[bagIndex];
@@ -154,7 +192,7 @@ public class PlayerInventory : MonoBehaviour
         return item == null || item.data == null || item.count <= 0;
     }
 
-    // ★ [수정 완료] 장착 칸 ➡️ 가방 이동(혹은 다른 아이템과 교환) 시 제한 로직 추가
+    // ★ 장착 칸 ➡️ 가방 이동(혹은 다른 아이템과 교환) 시 제한 로직
     private void MoveEquipItemToBag(int equipIndex, int bagIndex)
     {
         InventoryItem equipItem = equipItems[equipIndex];
@@ -189,7 +227,6 @@ public class PlayerInventory : MonoBehaviour
         }
 
         // 다른 아이템과 다이렉트로 맞바꾸려 할 때 (Swap 제약 추가)
-        // 가방에서 장착 칸으로 들어오려는 맞바꿈 템(bagItem)의 자격을 검사합니다.
         if (equipIndex == 0 && bagItem.data.itemType != ItemType.Weapon)
         {
             Debug.LogWarning("무기 슬롯에는 무기 타입의 아이템만 교환해 넣을 수 있습니다.");

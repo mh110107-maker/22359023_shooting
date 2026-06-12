@@ -25,5 +25,7 @@ public class CharacterMove : MonoBehaviour
         //transform.Translate(derect * spd * Time.deltaTime);
         transform.position = transform.position + derect * spd * Time.deltaTime;
 
+        if (Time.timeScale == 0f) return;
+
     }
 }
